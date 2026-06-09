@@ -3,7 +3,8 @@
 services:
 
   # ── .NET 8 API ─────────────────────────────────────────────────────────────
-  api:
+  servicetracker.api:
+    image: ${DOCKER_REGISTRY-}servicetrackerapi
     build:
       context: .
       dockerfile: src/ServiceTracker.Api/Dockerfile
