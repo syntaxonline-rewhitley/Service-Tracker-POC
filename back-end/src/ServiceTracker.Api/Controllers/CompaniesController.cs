@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ServiceTracker.Api.Data;
 using ServiceTracker.Api.Entities;
@@ -6,6 +7,7 @@ using ServiceTracker.Api.Repositories;
 
 namespace ServiceTracker.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class CompaniesController(ICompanyRepository repository, IContactRepository contactRepository) : ControllerBase
