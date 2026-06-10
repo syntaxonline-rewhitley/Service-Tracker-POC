@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ServiceTracker.Api.Entities;
 
 namespace ServiceTracker.Api.Data;
 
-public class ServiceTrackerDbContext(DbContextOptions<ServiceTrackerDbContext> options) : DbContext(options)
+public class ServiceTrackerDbContext(DbContextOptions<ServiceTrackerDbContext> options) : IdentityDbContext<IdentityUser>(options)
 {
     public DbSet<Contact> Contacts => Set<Contact>();
     public DbSet<Company> Companies => Set<Company>();
