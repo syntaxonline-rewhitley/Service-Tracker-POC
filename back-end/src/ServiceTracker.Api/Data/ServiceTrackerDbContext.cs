@@ -9,6 +9,7 @@ public class ServiceTrackerDbContext(DbContextOptions<ServiceTrackerDbContext> o
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<CompanyContact> CompanyContacts => Set<CompanyContact>();
     public DbSet<Technician> Technicians => Set<Technician>();
+    public DbSet<ServiceTicket> ServiceTickets => Set<ServiceTicket>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,6 +71,36 @@ public class ServiceTrackerDbContext(DbContextOptions<ServiceTrackerDbContext> o
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()");
+        });
+
+        modelBuilder.Entity<ServiceTicket>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.TicketNumber).IsRequired().HasMaxLength(20);
+            entity.HasIndex(e => e.TicketNumber).IsUnique();
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+            entity.Property(e => e.Priority).HasConversion<string>().HasMaxLength(20);
+            entity.Property(e => e.ResolutionNotes).HasMaxLength(2000);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()");
+
+            entity.HasOne(e => e.Company)
+                  .WithMany()
+                  .HasForeignKey(e => e.CompanyId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Contact)
+                  .WithMany()
+                  .HasForeignKey(e => e.ContactId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Technician)
+                  .WithMany()
+                  .HasForeignKey(e => e.TechnicianId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
