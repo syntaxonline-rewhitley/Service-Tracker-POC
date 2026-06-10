@@ -8,6 +8,7 @@ public class ServiceTrackerDbContext(DbContextOptions<ServiceTrackerDbContext> o
     public DbSet<Contact> Contacts => Set<Contact>();
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<CompanyContact> CompanyContacts => Set<CompanyContact>();
+    public DbSet<Technician> Technicians => Set<Technician>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -54,6 +55,21 @@ public class ServiceTrackerDbContext(DbContextOptions<ServiceTrackerDbContext> o
                   .WithMany(c => c.CompanyContacts)
                   .HasForeignKey(e => e.ContactId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Technician>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Email).IsRequired().HasMaxLength(254);
+            entity.HasIndex(e => e.Email).IsUnique();
+            entity.Property(e => e.Phone).HasMaxLength(30);
+            entity.Property(e => e.Specialization).HasMaxLength(200);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()");
         });
     }
 }

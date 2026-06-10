@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ServiceTracker.Api.Data;
@@ -11,9 +12,11 @@ using ServiceTracker.Api.Data;
 namespace ServiceTracker.Api.Data.Migrations
 {
     [DbContext(typeof(ServiceTrackerDbContext))]
-    partial class ServiceTrackerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260609214526_AddTechnicianEntity")]
+    partial class AddTechnicianEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
