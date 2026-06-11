@@ -1,14 +1,12 @@
 # Deploy ServiceTracker Stack
 #
 # Required GitHub repository secrets:
-#   DEPLOY_HOST        - Server IP or hostname (e.g. 192.168.186.10)
-#   DEPLOY_USER        - SSH username on the server
-#   DEPLOY_SSH_KEY     - SSH private key (PEM format) for passwordless auth
-#   DEPLOY_PATH_CLOUD  - Absolute path to ServiceTracker/src on the server
-#   GHCR_USER          - GitHub username / org that owns the packages
-#   GHCR_TOKEN         - GitHub PAT with read:packages scope (for server pull)
-#   VERCEL_DEPLOY_HOOK  - Vercel deploy hook URL for servicetrack-web (Project Settings → Git → Deploy Hooks)
-
+#   DEPLOY_HOST      - Server IP or hostname (e.g. 192.168.1.10)
+#   DEPLOY_USER      - SSH username on the server
+#   DEPLOY_SSH_KEY   - SSH private key (PEM format) for passwordless auth
+#   DEPLOY_PATH      - Absolute path to the repository root on the server
+#   GHCR_USER        - GitHub username / org that owns the packages
+#   GHCR_TOKEN       - GitHub PAT with read:packages scope (for server pull)#   VERCEL_DEPLOY_HOOK - Vercel deploy hook URL (Project Settings → Git → Deploy Hooks)
 name: Deploy ServiceTracker Stack
 
 on:
@@ -35,13 +33,13 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore
-        run: dotnet restore "Service Tracker POC"/"Service Tracker POC.sln"
+        run: dotnet restore "Service Tracker POC.sln"
 
       - name: Build
-        run: dotnet build "Service Tracker POC"/"Service Tracker POC.sln" --no-restore -c Release
+        run: dotnet build "Service Tracker POC.sln" --no-restore -c Release
 
       - name: Test
-        run: dotnet test "Service Tracker POC"/"Service Tracker POC.sln" --no-build -c Release --verbosity normal
+        run: dotnet test "Service Tracker POC.sln" --no-build -c Release --verbosity normal
 
   # ── 2. Build images and push to ghcr.io ───────────────────────────────────
   build-and-push:
@@ -77,14 +75,14 @@ jobs:
       - name: Build and push API
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ServiceTracker/src/ServiceTrackerApi/Dockerfile
+          context: back-end
+          file: back-end/src/ServiceTracker.Api/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ steps.owner.outputs.value }}/servicetrack-api:${{ steps.tag.outputs.value }}
+          tags: ${{ env.REGISTRY }}/${{ steps.owner.outputs.value }}/servicetrackerapi:${{ steps.tag.outputs.value }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ── 3. Deploy API to VPS via SSH ──────────────────────────────────
+  # ── 3. Deploy back-end to VPS via SSH ─────────────────────────────────────
   deploy-api:
     name: Deploy API to VPS
     needs: build-and-push
@@ -99,21 +97,18 @@ jobs:
           script: |
             set -euo pipefail
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USER }}" --password-stdin
-            cd "${{ secrets.DEPLOY_PATH_CLOUD }}"
-            REGISTRY_USER=${{ needs.build-and-push.outputs.owner }} \
-            IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }} \
-            docker compose pull servicetrackapi
-            REGISTRY_USER=${{ needs.build-and-push.outputs.owner }} \
-            IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }} \
-            docker compose up -d --no-build servicetrackapi postgres pgadmin rabbitmq
+            cd "${{ secrets.DEPLOY_PATH }}/back-end"
+            DOCKER_REGISTRY=${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.owner }}/ \
+            docker compose pull servicetracker.api
+            DOCKER_REGISTRY=${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.owner }}/ \
+            docker compose up -d --no-build servicetracker.api postgres pgadmin rabbitmq
             docker system prune -f
 
-  # ── 4. Deploy frontend to Vercel ──────────────────────────────────────────
+  # ── 4. Deploy front-end to Vercel ────────────────────────────────────────
   deploy-web:
-    name: Deploy Web to Vercel
+    name: Deploy Web UI to Vercel
     needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Vercel deploy hook
-        run: |
-          curl -fsSL -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
+        run: curl -fsSL -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
