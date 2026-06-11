@@ -1,21 +1,32 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using ServiceTracker.Api.Models;
+using ServiceTracker.Api.Repositories;
 using ServiceTracker.Api.Services;
 
 namespace ServiceTracker.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(UserManager<IdentityUser> userManager, TokenService tokenService) : ControllerBase
+public class AuthController(
+    UserManager<IdentityUser> userManager,
+    ITechnicianRepository technicianRepository,
+    TokenService tokenService) : ControllerBase
 {
+    private static readonly string[] ValidRoles = ["Admin", "Dispatcher", "Technician"];
+
     [HttpPost("register")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType<TokenResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         if (request.Password != request.ConfirmPassword)
             return BadRequest("Passwords do not match.");
+
+        if (!ValidRoles.Contains(request.Role))
+            return BadRequest($"Role must be one of: {string.Join(", ", ValidRoles)}.");
 
         var user = new IdentityUser
         {
@@ -27,7 +38,34 @@ public class AuthController(UserManager<IdentityUser> userManager, TokenService 
         if (!result.Succeeded)
             return BadRequest(result.Errors.Select(e => e.Description));
 
-        return Ok(tokenService.GenerateToken(user));
+        await userManager.AddToRoleAsync(user, request.Role);
+
+        // Auto-link technician entity to the new user account
+        if (request.Role == "Technician")
+        {
+            var technician = (await technicianRepository.GetAllAsync())
+                .FirstOrDefault(t => t.Email.Equals(request.Email, StringComparison.OrdinalIgnoreCase));
+            if (technician is not null)
+                await technicianRepository.LinkUserAsync(technician.Id, user.Id);
+        }
+
+        var roles = await userManager.GetRolesAsync(user);
+        return Ok(tokenService.GenerateToken(user, roles));
+    }
+
+    [HttpGet("users")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType<IEnumerable<UserListItem>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetUsers()
+    {
+        var users = userManager.Users.ToList();
+        var result = new List<UserListItem>();
+        foreach (var u in users)
+        {
+            var roles = await userManager.GetRolesAsync(u);
+            result.Add(new UserListItem(u.Id, u.Email!, roles));
+        }
+        return Ok(result);
     }
 
     [HttpPost("login")]
@@ -39,6 +77,7 @@ public class AuthController(UserManager<IdentityUser> userManager, TokenService 
         if (user is null || !await userManager.CheckPasswordAsync(user, request.Password))
             return Unauthorized("Invalid email or password.");
 
-        return Ok(tokenService.GenerateToken(user));
+        var roles = await userManager.GetRolesAsync(user);
+        return Ok(tokenService.GenerateToken(user, roles));
     }
 }

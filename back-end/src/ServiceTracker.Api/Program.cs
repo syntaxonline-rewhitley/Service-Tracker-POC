@@ -1,12 +1,18 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Text.Json.Serialization;
 using Microsoft.OpenApi.Models;
 using ServiceTracker.Api.Data;
 using ServiceTracker.Api.Repositories;
 using ServiceTracker.Api.Services;
+
+// Prevent the JWT handler from remapping "role" → full URN claim type,
+// so our RoleClaimType = "role" actually finds the claims in the token.
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +28,7 @@ builder.Services.AddIdentityCore<IdentityUser>(options =>
         options.Password.RequiredLength = 8;
         options.User.RequireUniqueEmail = true;
     })
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ServiceTrackerDbContext>();
 
 // JWT Authentication
@@ -31,6 +38,10 @@ var jwtKey = builder.Configuration["Jwt:Key"]
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Disable claim type remapping so "role" stays as "role" in the ClaimsIdentity.
+        // DefaultInboundClaimTypeMap.Clear() only affects JwtSecurityTokenHandler;
+        // .NET 8 JwtBearer uses JsonWebTokenHandler by default which needs this flag.
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -39,7 +50,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            RoleClaimType = "role"
         };
     });
 
@@ -57,7 +69,8 @@ builder.Services.AddScoped<ITechnicianRepository, TechnicianRepository>();
 builder.Services.AddScoped<IServiceTicketRepository, ServiceTicketRepository>();
 builder.Services.AddScoped<TokenService>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -97,6 +110,27 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowUI");
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Seed roles and default admin
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    var cfg = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+
+    foreach (var role in new[] { "Admin", "Dispatcher", "Technician" })
+        if (!await roleManager.RoleExistsAsync(role))
+            await roleManager.CreateAsync(new IdentityRole(role));
+
+    var adminEmail = cfg["DefaultAdmin:Email"] ?? "admin@servicetracker.local";
+    var adminPass = cfg["DefaultAdmin:Password"] ?? "Admin1234";
+    if (await userManager.FindByEmailAsync(adminEmail) is null)
+    {
+        var admin = new IdentityUser { UserName = adminEmail, Email = adminEmail };
+        await userManager.CreateAsync(admin, adminPass);
+        await userManager.AddToRoleAsync(admin, "Admin");
+    }
+}
 
 app.MapControllers();
 

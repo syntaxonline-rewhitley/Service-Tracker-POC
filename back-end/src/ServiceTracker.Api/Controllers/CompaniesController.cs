@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ServiceTracker.Api.Data;
 using ServiceTracker.Api.Entities;
 using ServiceTracker.Api.Models;
 using ServiceTracker.Api.Repositories;
@@ -13,6 +12,7 @@ namespace ServiceTracker.Api.Controllers;
 public class CompaniesController(ICompanyRepository repository, IContactRepository contactRepository) : ControllerBase
 {
     [HttpGet]
+    [Authorize(Roles = "Admin,Dispatcher")]
     [ProducesResponseType<IEnumerable<CompanyResponse>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
@@ -21,6 +21,7 @@ public class CompaniesController(ICompanyRepository repository, IContactReposito
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize(Roles = "Admin,Dispatcher")]
     [ProducesResponseType<CompanyResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
@@ -30,6 +31,7 @@ public class CompaniesController(ICompanyRepository repository, IContactReposito
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType<CompanyResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateCompanyRequest request, CancellationToken ct)
@@ -49,6 +51,7 @@ public class CompaniesController(ICompanyRepository repository, IContactReposito
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType<CompanyResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -68,6 +71,7 @@ public class CompaniesController(ICompanyRepository repository, IContactReposito
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
@@ -77,6 +81,7 @@ public class CompaniesController(ICompanyRepository repository, IContactReposito
     }
 
     [HttpGet("{companyId:guid}/contacts")]
+    [Authorize(Roles = "Admin,Dispatcher")]
     [ProducesResponseType<IEnumerable<ContactResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetContacts(Guid companyId, CancellationToken ct)
@@ -90,6 +95,7 @@ public class CompaniesController(ICompanyRepository repository, IContactReposito
     }
 
     [HttpPost("{companyId:guid}/contacts/{contactId:guid}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -110,6 +116,7 @@ public class CompaniesController(ICompanyRepository repository, IContactReposito
     }
 
     [HttpDelete("{companyId:guid}/contacts/{contactId:guid}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UnlinkContact(Guid companyId, Guid contactId, CancellationToken ct)

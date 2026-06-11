@@ -9,7 +9,7 @@ namespace ServiceTracker.Api.Services;
 
 public class TokenService(IConfiguration configuration)
 {
-    public TokenResponse GenerateToken(IdentityUser user)
+    public TokenResponse GenerateToken(IdentityUser user, IList<string> roles)
     {
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(configuration["Jwt:Key"]!));
@@ -17,12 +17,14 @@ public class TokenService(IConfiguration configuration)
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expires = DateTime.UtcNow.AddHours(1);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email!),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(JwtRegisteredClaimNames.Sub, user.Id),
+            new(JwtRegisteredClaimNames.Email, user.Email!),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        claims.AddRange(roles.Select(r => new Claim("role", r)));
 
         var token = new JwtSecurityToken(
             issuer: configuration["Jwt:Issuer"],

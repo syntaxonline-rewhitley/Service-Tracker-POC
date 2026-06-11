@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ServiceTracker.Api.Entities;
@@ -9,9 +10,12 @@ namespace ServiceTracker.Api.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
-public class ServiceTicketsController(IServiceTicketRepository repository) : ControllerBase
+public class ServiceTicketsController(
+    IServiceTicketRepository repository,
+    ITechnicianRepository technicianRepository) : ControllerBase
 {
     [HttpGet]
+    [Authorize(Roles = "Admin,Dispatcher")]
     [ProducesResponseType<IEnumerable<ServiceTicketResponse>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
@@ -19,7 +23,25 @@ public class ServiceTicketsController(IServiceTicketRepository repository) : Con
         return Ok(tickets.Select(ToResponse));
     }
 
+    [HttpGet("my")]
+    [Authorize(Roles = "Technician")]
+    [ProducesResponseType<IEnumerable<ServiceTicketResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMine(CancellationToken ct)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                     ?? User.FindFirstValue("sub");
+        if (userId is null) return Unauthorized();
+
+        var technician = await technicianRepository.GetByUserIdAsync(userId, ct);
+        if (technician is null) return NotFound("No technician record linked to this account.");
+
+        var tickets = await repository.GetByTechnicianAsync(technician.Id, ct);
+        return Ok(tickets.Select(ToResponse));
+    }
+
     [HttpGet("{id:guid}")]
+    [Authorize(Roles = "Admin,Dispatcher,Technician")]
     [ProducesResponseType<ServiceTicketResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
@@ -29,6 +51,7 @@ public class ServiceTicketsController(IServiceTicketRepository repository) : Con
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin,Dispatcher")]
     [ProducesResponseType<ServiceTicketResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateServiceTicketRequest request, CancellationToken ct)
@@ -43,7 +66,7 @@ public class ServiceTicketsController(IServiceTicketRepository repository) : Con
             CompanyId = request.CompanyId,
             ContactId = request.ContactId,
             TechnicianId = request.TechnicianId,
-            ScheduledDate = request.ScheduledDate
+            ScheduledDate = DateTime.SpecifyKind(request.ScheduledDate.GetValueOrDefault(), DateTimeKind.Utc)
         };
 
         var created = await repository.CreateAsync(ticket, ct);
@@ -51,6 +74,7 @@ public class ServiceTicketsController(IServiceTicketRepository repository) : Con
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin,Dispatcher,Technician")]
     [ProducesResponseType<ServiceTicketResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -75,6 +99,7 @@ public class ServiceTicketsController(IServiceTicketRepository repository) : Con
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)

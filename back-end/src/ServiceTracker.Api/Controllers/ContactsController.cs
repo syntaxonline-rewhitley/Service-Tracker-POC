@@ -12,6 +12,7 @@ namespace ServiceTracker.Api.Controllers;
 public class ContactsController(IContactRepository repository) : ControllerBase
 {
     [HttpGet]
+    [Authorize(Roles = "Admin,Dispatcher")]
     [ProducesResponseType<IEnumerable<ContactResponse>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
@@ -20,6 +21,7 @@ public class ContactsController(IContactRepository repository) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize(Roles = "Admin,Dispatcher")]
     [ProducesResponseType<ContactResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
@@ -29,6 +31,7 @@ public class ContactsController(IContactRepository repository) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType<ContactResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateContactRequest request, CancellationToken ct)
@@ -48,6 +51,7 @@ public class ContactsController(IContactRepository repository) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType<ContactResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -67,6 +71,7 @@ public class ContactsController(IContactRepository repository) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
