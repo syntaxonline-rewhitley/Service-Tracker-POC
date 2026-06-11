@@ -111,9 +111,12 @@ app.UseCors("AllowUI");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Seed roles and default admin
+// Apply pending migrations and seed roles / default admin
 using (var scope = app.Services.CreateScope())
 {
+    var db = scope.ServiceProvider.GetRequiredService<ServiceTrackerDbContext>();
+    await db.Database.MigrateAsync();
+
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
     var cfg = scope.ServiceProvider.GetRequiredService<IConfiguration>();
