@@ -35,13 +35,13 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore
-        run: dotnet restore ServiceTracker/ServiceTracker.sln
+        run: dotnet restore "Service Tracker POC"/"Service Tracker POC.sln"
 
       - name: Build
-        run: dotnet build ServiceTracker/ServiceTracker.sln --no-restore -c Release
+        run: dotnet build "Service Tracker POC"/"Service Tracker POC.sln" --no-restore -c Release
 
       - name: Test
-        run: dotnet test ServiceTracker/ServiceTracker.sln --no-build -c Release --verbosity normal
+        run: dotnet test "Service Tracker POC"/"Service Tracker POC.sln" --no-build -c Release --verbosity normal
 
   # ── 2. Build images and push to ghcr.io ───────────────────────────────────
   build-and-push:
