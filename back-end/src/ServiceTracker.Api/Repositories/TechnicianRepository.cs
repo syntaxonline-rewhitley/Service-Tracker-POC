@@ -12,6 +12,9 @@ public class TechnicianRepository(ServiceTrackerDbContext db) : ITechnicianRepos
     public async Task<Technician?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         await db.Technicians.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id, ct);
 
+    public async Task<Technician?> GetByUserIdAsync(string userId, CancellationToken ct = default) =>
+        await db.Technicians.AsNoTracking().FirstOrDefaultAsync(t => t.UserId == userId, ct);
+
     public async Task<Technician> CreateAsync(Technician technician, CancellationToken ct = default)
     {
         technician.CreatedAt = DateTime.UtcNow;
@@ -42,5 +45,12 @@ public class TechnicianRepository(ServiceTrackerDbContext db) : ITechnicianRepos
     {
         var rows = await db.Technicians.Where(t => t.Id == id).ExecuteDeleteAsync(ct);
         return rows > 0;
+    }
+
+    public async Task LinkUserAsync(Guid technicianId, string userId, CancellationToken ct = default)
+    {
+        await db.Technicians
+            .Where(t => t.Id == technicianId)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.UserId, userId), ct);
     }
 }

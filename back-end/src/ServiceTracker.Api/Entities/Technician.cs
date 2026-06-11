@@ -9,6 +9,7 @@ public class Technician
     public string? Phone { get; set; }
     public string? Specialization { get; set; }
     public bool IsActive { get; set; } = true;
+    public string? UserId { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

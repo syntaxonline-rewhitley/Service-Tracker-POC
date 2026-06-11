@@ -12,6 +12,7 @@ namespace ServiceTracker.Api.Controllers;
 public class TechniciansController(ITechnicianRepository repository) : ControllerBase
 {
     [HttpGet]
+    [Authorize(Roles = "Admin,Dispatcher")]
     [ProducesResponseType<IEnumerable<TechnicianResponse>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
@@ -20,6 +21,7 @@ public class TechniciansController(ITechnicianRepository repository) : Controlle
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize(Roles = "Admin,Dispatcher")]
     [ProducesResponseType<TechnicianResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
@@ -29,6 +31,7 @@ public class TechniciansController(ITechnicianRepository repository) : Controlle
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType<TechnicianResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateTechnicianRequest request, CancellationToken ct)
@@ -49,6 +52,7 @@ public class TechniciansController(ITechnicianRepository repository) : Controlle
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType<TechnicianResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -69,6 +73,7 @@ public class TechniciansController(ITechnicianRepository repository) : Controlle
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)

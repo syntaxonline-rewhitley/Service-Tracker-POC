@@ -1,0 +1,14 @@
+name: service-tracker-frontend
+
+services:
+
+  # ── React / Vite Front-End ──────────────────────────────────────────────────
+  servicetracker.web:
+    image: ${DOCKER_REGISTRY-}servicetrackerwebui
+    build:
+      context: ./Web
+      dockerfile: Dockerfile
+    container_name: service-tracker-web
+    restart: unless-stopped
+    ports:
+      - "3000:80"
