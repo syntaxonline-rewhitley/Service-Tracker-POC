@@ -97,7 +97,7 @@ jobs:
           script: |
             set -euo pipefail
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USER }}" --password-stdin
-            cd "${{ secrets.DEPLOY_PATH }}/back-end"
+            cd "${{ secrets.DEPLOY_PATH }}"
             DOCKER_REGISTRY=${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.owner }}/ \
             docker compose pull servicetracker.api
             DOCKER_REGISTRY=${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.owner }}/ \
