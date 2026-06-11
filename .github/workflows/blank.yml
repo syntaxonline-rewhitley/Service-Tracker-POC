@@ -1,36 +1,119 @@
-# This is a basic workflow to help you get started with Actions
+# Deploy ServiceTracker Stack
+#
+# Required GitHub repository secrets:
+#   DEPLOY_HOST        - Server IP or hostname (e.g. 192.168.186.10)
+#   DEPLOY_USER        - SSH username on the server
+#   DEPLOY_SSH_KEY     - SSH private key (PEM format) for passwordless auth
+#   DEPLOY_PATH_CLOUD  - Absolute path to ServiceTracker/src on the server
+#   GHCR_USER          - GitHub username / org that owns the packages
+#   GHCR_TOKEN         - GitHub PAT with read:packages scope (for server pull)
+#   VERCEL_DEPLOY_HOOK  - Vercel deploy hook URL for servicetrack-web (Project Settings → Git → Deploy Hooks)
 
-name: CI
+name: Deploy ServiceTracker Stack
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag'
+        required: false
+        default: 'latest'
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+env:
+  REGISTRY: ghcr.io
+
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  # ── 1. Run .NET tests ──────────────────────────────────────────────────────
+  test:
+    name: .NET Tests
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: Restore
+        run: dotnet restore ServiceTracker/ServiceTracker.sln
+
+      - name: Build
+        run: dotnet build ServiceTracker/ServiceTracker.sln --no-restore -c Release
+
+      - name: Test
+        run: dotnet test ServiceTracker/ServiceTracker.sln --no-build -c Release --verbosity normal
+
+  # ── 2. Build images and push to ghcr.io ───────────────────────────────────
+  build-and-push:
+    name: Build & Push Images
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.tag.outputs.value }}
+      owner: ${{ steps.owner.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve image tag
+        id: tag
+        run: echo "value=${{ inputs.image_tag || 'latest' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Lowercase repository owner
+        id: owner
+        run: echo "value=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ServiceTracker/src/ServiceTrackerApi/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ steps.owner.outputs.value }}/servicetrack-api:${{ steps.tag.outputs.value }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── 3. Deploy API to VPS via SSH ──────────────────────────────────
+  deploy-api:
+    name: Deploy API to VPS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USER }}" --password-stdin
+            cd "${{ secrets.DEPLOY_PATH_CLOUD }}"
+            REGISTRY_USER=${{ needs.build-and-push.outputs.owner }} \
+            IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }} \
+            docker compose pull servicetrackapi
+            REGISTRY_USER=${{ needs.build-and-push.outputs.owner }} \
+            IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }} \
+            docker compose up -d --no-build servicetrackapi postgres pgadmin rabbitmq
+            docker system prune -f
+
+  # ── 4. Deploy frontend to Vercel ──────────────────────────────────────────
+  deploy-web:
+    name: Deploy Web to Vercel
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel deploy hook
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          curl -fsSL -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
