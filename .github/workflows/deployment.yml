@@ -1,12 +1,19 @@
 # Deploy ServiceTracker Stack
 #
 # Required GitHub repository secrets:
-#   DEPLOY_HOST      - Server IP or hostname (e.g. 192.168.1.10)
-#   DEPLOY_USER      - SSH username on the server
-#   DEPLOY_SSH_KEY   - SSH private key (PEM format) for passwordless auth
-#   DEPLOY_PATH      - Absolute path to the repository root on the server
-#   GHCR_USER        - GitHub username / org that owns the packages
-#   GHCR_TOKEN       - GitHub PAT with read:packages scope (for server pull)#   VERCEL_DEPLOY_HOOK - Vercel deploy hook URL (Project Settings → Git → Deploy Hooks)
+#   DEPLOY_HOST       - Server IP or hostname (e.g. 192.168.1.10)
+#   DEPLOY_USER       - SSH username on the server
+#   DEPLOY_SSH_KEY    - SSH private key (PEM format) for passwordless auth
+#   DEPLOY_PATH       - Absolute path to the repository root on the server
+#   GHCR_USER         - GitHub username / org that owns the packages
+#   GHCR_TOKEN        - GitHub PAT with read:packages scope (for server pull)
+#   VERCEL_DEPLOY_HOOK - Vercel deploy hook URL (Project Settings → Git → Deploy Hooks)
+#   POSTGRES_USER     - PostgreSQL username
+#   POSTGRES_PASSWORD - PostgreSQL password
+#   RABBITMQ_USER     - RabbitMQ username
+#   RABBITMQ_PASSWORD - RabbitMQ password
+#   PGADMIN_EMAIL     - pgAdmin login email
+#   PGADMIN_PASSWORD  - pgAdmin login password
 name: Deploy ServiceTracker Stack
 
 on:
@@ -94,15 +101,25 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: DOCKER_REGISTRY,POSTGRES_USER,POSTGRES_PASSWORD,RABBITMQ_USER,RABBITMQ_PASSWORD,PGADMIN_EMAIL,PGADMIN_PASSWORD,GHCR_USER,GHCR_TOKEN
           script: |
             set -euo pipefail
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USER }}" --password-stdin
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             cd "${{ secrets.DEPLOY_PATH }}"
-            DOCKER_REGISTRY=${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.owner }}/ \
+            export DOCKER_REGISTRY POSTGRES_USER POSTGRES_PASSWORD RABBITMQ_USER RABBITMQ_PASSWORD PGADMIN_EMAIL PGADMIN_PASSWORD
             docker compose pull servicetracker.api
-            DOCKER_REGISTRY=${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.owner }}/ \
             docker compose up -d --no-build servicetracker.api postgres pgadmin rabbitmq
             docker system prune -f
+        env:
+          DOCKER_REGISTRY: ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.owner }}/
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          RABBITMQ_USER: ${{ secrets.RABBITMQ_USER }}
+          RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
+          PGADMIN_EMAIL: ${{ secrets.PGADMIN_EMAIL }}
+          PGADMIN_PASSWORD: ${{ secrets.PGADMIN_PASSWORD }}
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
   # ── 4. Deploy front-end to Vercel ────────────────────────────────────────
   deploy-web:
