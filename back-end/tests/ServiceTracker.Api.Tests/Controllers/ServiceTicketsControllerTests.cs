@@ -1,6 +1,8 @@
 using FluentAssertions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
+using System.Security.Claims;
 using Xunit;
 using ServiceTracker.Api.Controllers;
 using ServiceTracker.Api.Entities;
@@ -12,11 +14,31 @@ namespace ServiceTracker.Api.Tests.Controllers;
 public class ServiceTicketsControllerTests
 {
     private readonly Mock<IServiceTicketRepository> _repo = new();
+    private readonly Mock<ITechnicianRepository> _technicianRepo = new();
     private readonly ServiceTicketsController _sut;
 
     public ServiceTicketsControllerTests()
     {
-        _sut = new ServiceTicketsController(_repo.Object);
+        _sut = new ServiceTicketsController(_repo.Object, _technicianRepo.Object);
+    }
+
+    private static ServiceTicketsController CreateSutWithUser(
+        Mock<IServiceTicketRepository> repo,
+        Mock<ITechnicianRepository> technicianRepo,
+        string userId)
+    {
+        var controller = new ServiceTicketsController(repo.Object, technicianRepo.Object);
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(
+                [
+                    new Claim(ClaimTypes.NameIdentifier, userId)
+                ], "test"))
+            }
+        };
+        return controller;
     }
 
     // --- GetAll ---
@@ -201,6 +223,80 @@ public class ServiceTicketsControllerTests
         var result = await _sut.Delete(Guid.NewGuid(), CancellationToken.None);
 
         result.Should().BeOfType<NotFoundResult>();
+    }
+
+    // --- GetMine ---
+
+    [Fact]
+    public async Task GetMine_ReturnsOkWithTechnicianTickets_WhenLinkedTechnicianExists()
+    {
+        var userId = Guid.NewGuid().ToString();
+        var technicianId = Guid.NewGuid();
+        var technician = new Technician { Id = technicianId, UserId = userId, Email = "tech@example.com" };
+        var tickets = new List<ServiceTicket> { MakeTicket("Fix server"), MakeTicket("Replace cable") };
+
+        _technicianRepo.Setup(r => r.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(technician);
+        _repo.Setup(r => r.GetByTechnicianAsync(technicianId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(tickets);
+
+        var sut = CreateSutWithUser(_repo, _technicianRepo, userId);
+        var result = await sut.GetMine(CancellationToken.None);
+
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
+        ok.Value.Should().BeAssignableTo<IEnumerable<ServiceTicketResponse>>()
+            .Which.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task GetMine_ReturnsOkWithEmptyList_WhenTechnicianHasNoTickets()
+    {
+        var userId = Guid.NewGuid().ToString();
+        var technicianId = Guid.NewGuid();
+        var technician = new Technician { Id = technicianId, UserId = userId, Email = "tech@example.com" };
+
+        _technicianRepo.Setup(r => r.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(technician);
+        _repo.Setup(r => r.GetByTechnicianAsync(technicianId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        var sut = CreateSutWithUser(_repo, _technicianRepo, userId);
+        var result = await sut.GetMine(CancellationToken.None);
+
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
+        ok.Value.Should().BeAssignableTo<IEnumerable<ServiceTicketResponse>>()
+            .Which.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetMine_ReturnsNotFound_WhenNoTechnicianLinkedToUser()
+    {
+        var userId = Guid.NewGuid().ToString();
+        _technicianRepo.Setup(r => r.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Technician?)null);
+
+        var sut = CreateSutWithUser(_repo, _technicianRepo, userId);
+        var result = await sut.GetMine(CancellationToken.None);
+
+        result.Should().BeOfType<NotFoundObjectResult>()
+            .Which.Value.Should().Be("No technician record linked to this account.");
+    }
+
+    [Fact]
+    public async Task GetMine_ReturnsUnauthorized_WhenUserClaimIsMissing()
+    {
+        var controller = new ServiceTicketsController(_repo.Object, _technicianRepo.Object);
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity())
+            }
+        };
+
+        var result = await controller.GetMine(CancellationToken.None);
+
+        result.Should().BeOfType<UnauthorizedResult>();
     }
 
     // --- Helpers ---
