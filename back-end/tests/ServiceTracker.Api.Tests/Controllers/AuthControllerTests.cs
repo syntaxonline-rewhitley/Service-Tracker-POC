@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Moq;
+using System.Security.Claims;
 using ServiceTracker.Api.Controllers;
 using ServiceTracker.Api.Entities;
 using ServiceTracker.Api.Models;
@@ -38,6 +40,22 @@ public class AuthControllerTests
 
         _tokenService = new TokenService(config);
         _sut = new AuthController(_userManager.Object, _technicianRepo.Object, _tokenService);
+    }
+
+    private AuthController CreateSutWithUserId(string currentUserId)
+    {
+        var controller = new AuthController(_userManager.Object, _technicianRepo.Object, _tokenService);
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(
+                [
+                    new Claim(ClaimTypes.NameIdentifier, currentUserId)
+                ], "test"))
+            }
+        };
+        return controller;
     }
 
     // ── Register ─────────────────────────────────────────────────────────────
@@ -382,5 +400,82 @@ public class AuthControllerTests
 
         _userManager.Verify(m =>
             m.CheckPasswordAsync(It.IsAny<IdentityUser>(), It.IsAny<string>()), Times.Never);
+    }
+
+    // ── DeleteUser ────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task DeleteUser_ReturnsNoContent_WhenUserDeletedSuccessfully()
+    {
+        var currentUserId = Guid.NewGuid().ToString();
+        var targetUserId = Guid.NewGuid().ToString();
+        var target = new IdentityUser { Id = targetUserId, Email = "target@example.com" };
+
+        _userManager.Setup(m => m.FindByIdAsync(targetUserId)).ReturnsAsync(target);
+        _userManager.Setup(m => m.DeleteAsync(target)).ReturnsAsync(IdentityResult.Success);
+
+        var sut = CreateSutWithUserId(currentUserId);
+        var result = await sut.DeleteUser(targetUserId);
+
+        result.Should().BeOfType<NoContentResult>();
+    }
+
+    [Fact]
+    public async Task DeleteUser_ReturnsBadRequest_WhenDeletingOwnAccount()
+    {
+        var userId = Guid.NewGuid().ToString();
+
+        var sut = CreateSutWithUserId(userId);
+        var result = await sut.DeleteUser(userId);
+
+        result.Should().BeOfType<BadRequestObjectResult>()
+            .Which.Value.Should().Be("You cannot delete your own account.");
+        _userManager.Verify(m => m.DeleteAsync(It.IsAny<IdentityUser>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteUser_ReturnsNotFound_WhenUserDoesNotExist()
+    {
+        var currentUserId = Guid.NewGuid().ToString();
+        var targetUserId = Guid.NewGuid().ToString();
+
+        _userManager.Setup(m => m.FindByIdAsync(targetUserId))
+            .ReturnsAsync((IdentityUser?)null);
+
+        var sut = CreateSutWithUserId(currentUserId);
+        var result = await sut.DeleteUser(targetUserId);
+
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [Fact]
+    public async Task DeleteUser_ReturnsBadRequest_WhenUserManagerDeleteFails()
+    {
+        var currentUserId = Guid.NewGuid().ToString();
+        var targetUserId = Guid.NewGuid().ToString();
+        var target = new IdentityUser { Id = targetUserId, Email = "target@example.com" };
+        var errors = new[] { new IdentityError { Description = "Cannot delete user." } };
+
+        _userManager.Setup(m => m.FindByIdAsync(targetUserId)).ReturnsAsync(target);
+        _userManager.Setup(m => m.DeleteAsync(target))
+            .ReturnsAsync(IdentityResult.Failed(errors));
+
+        var sut = CreateSutWithUserId(currentUserId);
+        var result = await sut.DeleteUser(targetUserId);
+
+        result.Should().BeOfType<BadRequestObjectResult>().Subject
+            .Value.Should().BeAssignableTo<IEnumerable<string>>()
+            .Which.Should().ContainSingle().Which.Should().Be("Cannot delete user.");
+    }
+
+    [Fact]
+    public async Task DeleteUser_DoesNotLookUpUser_WhenDeletingOwnAccount()
+    {
+        var userId = Guid.NewGuid().ToString();
+
+        var sut = CreateSutWithUserId(userId);
+        await sut.DeleteUser(userId);
+
+        _userManager.Verify(m => m.FindByIdAsync(It.IsAny<string>()), Times.Never);
     }
 }
