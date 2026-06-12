@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -66,6 +67,29 @@ public class AuthController(
             result.Add(new UserListItem(u.Id, u.Email!, roles));
         }
         return Ok(result);
+    }
+
+    [HttpDelete("users/{id}")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteUser(string id)
+    {
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                            ?? User.FindFirstValue("sub");
+        if (id == currentUserId)
+            return BadRequest("You cannot delete your own account.");
+
+        var user = await userManager.FindByIdAsync(id);
+        if (user is null)
+            return NotFound();
+
+        var result = await userManager.DeleteAsync(user);
+        if (!result.Succeeded)
+            return BadRequest(result.Errors.Select(e => e.Description));
+
+        return NoContent();
     }
 
     [HttpPost("login")]

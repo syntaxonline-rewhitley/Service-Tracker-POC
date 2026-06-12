@@ -35,6 +35,9 @@ export const registerUser = (data: RegisterUserRequest) =>
 export const getUsers = () =>
   api.get<UserListItem[]>('/auth/users').then((r) => r.data)
 
+export const deleteUser = (id: string) =>
+  api.delete(`/auth/users/${id}`)
+
 // ── Companies ────────────────────────────────────────────────────────────────
 export const getCompanies = () =>
     api.get<Company[]>('/companies').then((r) => r.data);
