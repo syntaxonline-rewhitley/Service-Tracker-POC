@@ -125,13 +125,22 @@ using (var scope = app.Services.CreateScope())
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new IdentityRole(role));
 
-    var adminEmail = cfg["DefaultAdmin:Email"] ?? "admin@servicetracker.local";
-    var adminPass = cfg["DefaultAdmin:Password"] ?? "Admin1234";
-    if (await userManager.FindByEmailAsync(adminEmail) is null)
+    // Seed default accounts for each role
+    var defaultAccounts = new[]
     {
-        var admin = new IdentityUser { UserName = adminEmail, Email = adminEmail };
-        await userManager.CreateAsync(admin, adminPass);
-        await userManager.AddToRoleAsync(admin, "Admin");
+        (Email: cfg["DefaultAdmin:Email"]      ?? "admin@servicetracker.local",      Password: cfg["DefaultAdmin:Password"]      ?? "Admin1234",      Role: "Admin"),
+        (Email: cfg["DefaultDispatcher:Email"] ?? "dispatcher@servicetracker.local", Password: cfg["DefaultDispatcher:Password"] ?? "Dispatcher1234", Role: "Dispatcher"),
+        (Email: cfg["DefaultTechnician:Email"] ?? "technician@servicetracker.local", Password: cfg["DefaultTechnician:Password"] ?? "Technician1234", Role: "Technician"),
+    };
+
+    foreach (var (email, password, role) in defaultAccounts)
+    {
+        if (await userManager.FindByEmailAsync(email) is null)
+        {
+            var user = new IdentityUser { UserName = email, Email = email };
+            await userManager.CreateAsync(user, password);
+            await userManager.AddToRoleAsync(user, role);
+        }
     }
 }
 
