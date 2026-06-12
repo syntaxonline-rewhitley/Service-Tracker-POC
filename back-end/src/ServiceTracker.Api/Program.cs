@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text.Json.Serialization;
 using Microsoft.OpenApi.Models;
 using ServiceTracker.Api.Data;
+using ServiceTracker.Api.Entities;
 using ServiceTracker.Api.Repositories;
 using ServiceTracker.Api.Services;
 
@@ -133,6 +134,8 @@ using (var scope = app.Services.CreateScope())
         (Email: cfg["DefaultTechnician:Email"] ?? "technician@servicetracker.local", Password: cfg["DefaultTechnician:Password"] ?? "Technician1234", Role: "Technician"),
     };
 
+    var technicianRepo = scope.ServiceProvider.GetRequiredService<ITechnicianRepository>();
+
     foreach (var (email, password, role) in defaultAccounts)
     {
         if (await userManager.FindByEmailAsync(email) is null)
@@ -140,6 +143,21 @@ using (var scope = app.Services.CreateScope())
             var user = new IdentityUser { UserName = email, Email = email };
             await userManager.CreateAsync(user, password);
             await userManager.AddToRoleAsync(user, role);
+
+            // For Technician accounts, also create the Technician entity and link it
+            if (role == "Technician")
+            {
+                var technician = new Technician
+                {
+                    Id = Guid.NewGuid(),
+                    FirstName = "Default",
+                    LastName = "Technician",
+                    Email = email,
+                    IsActive = true
+                };
+                await technicianRepo.CreateAsync(technician);
+                await technicianRepo.LinkUserAsync(technician.Id, user.Id);
+            }
         }
     }
 }
