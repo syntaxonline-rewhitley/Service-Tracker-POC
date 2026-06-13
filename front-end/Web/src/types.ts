@@ -120,3 +120,75 @@ export interface RegisterUserRequest {
   confirmPassword: string
   role: string
 }
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+
+export interface TicketsByStatusItem {
+  status: string
+  count: number
+}
+
+export interface TicketsByPriorityItem {
+  priority: string
+  count: number
+}
+
+export interface TicketsByTechnicianItem {
+  technicianName: string
+  open: number
+  inProgress: number
+  total: number
+}
+
+export interface RecentTicketItem {
+  id: string
+  ticketNumber: string
+  title: string
+  status: string
+  priority: string
+  companyName: string
+  createdAt: string
+}
+
+export interface DailyTrendItem {
+  date: string
+  count: number
+}
+
+export interface DashboardStats {
+  totalTickets: number
+  openTickets: number
+  inProgressTickets: number
+  onHoldTickets: number
+  resolvedTickets: number
+  closedTickets: number
+  monthlyTickets: number
+  last30DaysTickets: number
+  dailyTickets: number
+  totalTechnicians: number
+  activeTechnicians: number
+  totalCompanies: number
+  totalContacts: number
+  ticketsByStatus: TicketsByStatusItem[]
+  ticketsByPriority: TicketsByPriorityItem[]
+  ticketsByTechnician: TicketsByTechnicianItem[]
+  recentTickets: RecentTicketItem[]
+  dailyTrend: DailyTrendItem[]
+}
+
+export interface TechnicianDashboardStats {
+  technicianName: string
+  totalTickets: number
+  openTickets: number
+  inProgressTickets: number
+  onHoldTickets: number
+  resolvedTickets: number
+  closedTickets: number
+  monthlyTickets: number
+  last30DaysTickets: number
+  dailyTickets: number
+  ticketsByStatus: TicketsByStatusItem[]
+  ticketsByPriority: TicketsByPriorityItem[]
+  recentTickets: RecentTicketItem[]
+  dailyTrend: DailyTrendItem[]
+}
