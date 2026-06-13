@@ -115,7 +115,7 @@ jobs:
           script: |
             set -euo pipefail
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-            cd "${{ secrets.DEPLOY_PATH }}"
+            cd "${{ secrets.DEPLOY_PATH }}/backend"
             export DOCKER_REGISTRY POSTGRES_USER POSTGRES_PASSWORD RABBITMQ_USER RABBITMQ_PASSWORD PGADMIN_EMAIL PGADMIN_PASSWORD
             docker compose pull servicetracker.api
             docker compose up -d --no-build servicetracker.api postgres pgadmin rabbitmq
@@ -131,11 +131,39 @@ jobs:
           GHCR_USER: ${{ secrets.GHCR_USER }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
-  # ── 4. Deploy front-end to Vercel ────────────────────────────────────────
+
+  # ── 3. Deploy front-end to VPS via SSH ─────────────────────────────────────
   deploy-web:
-    name: Deploy Web UI to Vercel
-    needs: test
+    name: Deploy Web UI to VPS
+    needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Vercel deploy hook
-        run: curl -fsSL -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: VITE_API_URL,DOCKER_REGISTRY,GHCR_USER,GHCR_TOKEN
+          script: |
+            set -euo pipefail
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            cd "${{ secrets.DEPLOY_PATH }}/frontend"
+            export DOCKER_REGISTRY VITE_API_URL
+            docker compose pull servicetracker.web
+            docker compose up -d --no-build servicetracker.web
+            docker system prune -f
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          DOCKER_REGISTRY: ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.owner }}/
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+
+  # ── 4. Deploy front-end to Vercel ────────────────────────────────────────
+  # deploy-web:
+  #   name: Deploy Web UI to Vercel
+  #   needs: test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Trigger Vercel deploy hook
+  #       run: curl -fsSL -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
