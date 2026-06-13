@@ -6,6 +6,8 @@ import type {
   CreateContactRequest,
   CreateServiceTicketRequest,
   CreateTechnicianRequest,
+  DashboardStats,
+  TechnicianDashboardStats,
   RegisterUserRequest,
   ServiceTicket,
   Technician,
@@ -37,6 +39,13 @@ export const getUsers = () =>
 
 export const deleteUser = (id: string) =>
   api.delete(`/auth/users/${id}`)
+
+// ── Dashboard ────────────────────────────────────────────────────────────────
+export const getDashboard = () =>
+  api.get<DashboardStats>('/dashboard').then((r) => r.data)
+
+export const getTechnicianDashboard = () =>
+  api.get<TechnicianDashboardStats>('/dashboard/me').then((r) => r.data)
 
 // ── Companies ────────────────────────────────────────────────────────────────
 export const getCompanies = () =>
