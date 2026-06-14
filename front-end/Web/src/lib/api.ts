@@ -17,8 +17,11 @@ import type {
   UserListItem,
 } from '../types'
 
-// In production (serverless), set VITE_API_URL to the full API origin e.g. https://api.example.com
-// In local dev, leave it unset — Vite's proxy forwards /api to localhost:8080
+// Container deployment: VITE_API_URL is NOT set at build time, so baseURL
+// falls back to '/api' — nginx proxies /api/ to the backend via the API_URL
+// runtime env var (see nginx.conf + docker-compose.frontend.yml).
+// Vercel deployment: set VITE_API_URL in Vercel project settings so it is
+// baked in at build time (e.g. https://api.example.com/api).
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? '/api' })
 
 api.interceptors.request.use((config) => {

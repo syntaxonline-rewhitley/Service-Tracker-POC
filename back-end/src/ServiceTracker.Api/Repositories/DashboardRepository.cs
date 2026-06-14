@@ -78,32 +78,32 @@ public class DashboardRepository(ServiceTrackerDbContext db) : IDashboardReposit
         {
             using var multi = await conn.QueryMultipleAsync(new CommandDefinition(sql, cancellationToken: ct));
 
-            var byStatus     = (await multi.ReadAsync<TicketsByStatusItem>()).ToList();
-            var byPriority   = (await multi.ReadAsync<TicketsByPriorityItem>()).ToList();
+            var byStatus = (await multi.ReadAsync<TicketsByStatusItem>()).ToList();
+            var byPriority = (await multi.ReadAsync<TicketsByPriorityItem>()).ToList();
             var byTechnician = (await multi.ReadAsync<TicketsByTechnicianItem>()).ToList();
-            var recent       = (await multi.ReadAsync<RecentTicketItem>()).ToList();
-            var trend        = (await multi.ReadAsync<DailyTrendItem>()).ToList();
-            var scalars      = await multi.ReadSingleAsync<ScalarCounts>();
+            var recent = (await multi.ReadAsync<RecentTicketItem>()).ToList();
+            var trend = (await multi.ReadAsync<DailyTrendItem>()).ToList();
+            var scalars = await multi.ReadSingleAsync<ScalarCounts>();
 
             return new DashboardStats(
-                TotalTickets:       scalars.TotalTickets,
-                OpenTickets:        scalars.OpenTickets,
-                InProgressTickets:  scalars.InProgressTickets,
-                OnHoldTickets:      scalars.OnHoldTickets,
-                ResolvedTickets:    scalars.ResolvedTickets,
-                ClosedTickets:      scalars.ClosedTickets,
-                MonthlyTickets:     scalars.MonthlyTickets,
-                Last30DaysTickets:  scalars.Last30DaysTickets,
-                DailyTickets:       scalars.DailyTickets,
-                TotalTechnicians:   scalars.TotalTechnicians,
-                ActiveTechnicians:  scalars.ActiveTechnicians,
-                TotalCompanies:     scalars.TotalCompanies,
-                TotalContacts:      scalars.TotalContacts,
-                TicketsByStatus:    byStatus,
-                TicketsByPriority:  byPriority,
+                TotalTickets: scalars.TotalTickets,
+                OpenTickets: scalars.OpenTickets,
+                InProgressTickets: scalars.InProgressTickets,
+                OnHoldTickets: scalars.OnHoldTickets,
+                ResolvedTickets: scalars.ResolvedTickets,
+                ClosedTickets: scalars.ClosedTickets,
+                MonthlyTickets: scalars.MonthlyTickets,
+                Last30DaysTickets: scalars.Last30DaysTickets,
+                DailyTickets: scalars.DailyTickets,
+                TotalTechnicians: scalars.TotalTechnicians,
+                ActiveTechnicians: scalars.ActiveTechnicians,
+                TotalCompanies: scalars.TotalCompanies,
+                TotalContacts: scalars.TotalContacts,
+                TicketsByStatus: byStatus,
+                TicketsByPriority: byPriority,
                 TicketsByTechnician: byTechnician,
-                RecentTickets:      recent,
-                DailyTrend:         trend
+                RecentTickets: recent,
+                DailyTrend: trend
             );
         }
         finally
@@ -186,27 +186,27 @@ public class DashboardRepository(ServiceTrackerDbContext db) : IDashboardReposit
             var nameRow = await multi.ReadFirstOrDefaultAsync<TechName>();
             if (nameRow is null) return null;
 
-            var byStatus    = (await multi.ReadAsync<TicketsByStatusItem>()).ToList();
-            var byPriority  = (await multi.ReadAsync<TicketsByPriorityItem>()).ToList();
-            var recent      = (await multi.ReadAsync<RecentTicketItem>()).ToList();
-            var trend       = (await multi.ReadAsync<DailyTrendItem>()).ToList();
-            var scalars     = await multi.ReadSingleAsync<TechScalarCounts>();
+            var byStatus = (await multi.ReadAsync<TicketsByStatusItem>()).ToList();
+            var byPriority = (await multi.ReadAsync<TicketsByPriorityItem>()).ToList();
+            var recent = (await multi.ReadAsync<RecentTicketItem>()).ToList();
+            var trend = (await multi.ReadAsync<DailyTrendItem>()).ToList();
+            var scalars = await multi.ReadSingleAsync<TechScalarCounts>();
 
             return new TechnicianDashboardStats(
-                TechnicianName:     nameRow.Name,
-                TotalTickets:       scalars.TotalTickets,
-                OpenTickets:        scalars.OpenTickets,
-                InProgressTickets:  scalars.InProgressTickets,
-                OnHoldTickets:      scalars.OnHoldTickets,
-                ResolvedTickets:    scalars.ResolvedTickets,
-                ClosedTickets:      scalars.ClosedTickets,
-                MonthlyTickets:     scalars.MonthlyTickets,
-                Last30DaysTickets:  scalars.Last30DaysTickets,
-                DailyTickets:       scalars.DailyTickets,
-                TicketsByStatus:    byStatus,
-                TicketsByPriority:  byPriority,
-                RecentTickets:      recent,
-                DailyTrend:         trend
+                TechnicianName: nameRow.Name,
+                TotalTickets: scalars.TotalTickets,
+                OpenTickets: scalars.OpenTickets,
+                InProgressTickets: scalars.InProgressTickets,
+                OnHoldTickets: scalars.OnHoldTickets,
+                ResolvedTickets: scalars.ResolvedTickets,
+                ClosedTickets: scalars.ClosedTickets,
+                MonthlyTickets: scalars.MonthlyTickets,
+                Last30DaysTickets: scalars.Last30DaysTickets,
+                DailyTickets: scalars.DailyTickets,
+                TicketsByStatus: byStatus,
+                TicketsByPriority: byPriority,
+                RecentTickets: recent,
+                DailyTrend: trend
             );
         }
         finally

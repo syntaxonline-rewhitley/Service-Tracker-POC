@@ -14,6 +14,7 @@
 #   RABBITMQ_PASSWORD - RabbitMQ password
 #   PGADMIN_EMAIL     - pgAdmin login email
 #   PGADMIN_PASSWORD  - pgAdmin login password
+#   API_URL           - Backend base URL passed to nginx at runtime, e.g. http://servicetracker.api:8080
 name: Deploy ServiceTracker Stack
 
 on:
@@ -144,17 +145,17 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: VITE_API_URL,DOCKER_REGISTRY,GHCR_USER,GHCR_TOKEN
+          envs: API_URL,DOCKER_REGISTRY,GHCR_USER,GHCR_TOKEN
           script: |
             set -euo pipefail
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             cd "${{ secrets.DEPLOY_PATH }}/frontend"
-            export DOCKER_REGISTRY VITE_API_URL
+            export DOCKER_REGISTRY API_URL
             docker compose pull servicetracker.web
             docker compose up -d --no-build servicetracker.web
             docker system prune -f
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          API_URL: ${{ secrets.API_URL }}
           DOCKER_REGISTRY: ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.owner }}/
           GHCR_USER: ${{ secrets.GHCR_USER }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
