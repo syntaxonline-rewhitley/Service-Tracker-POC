@@ -117,7 +117,7 @@ jobs:
           script: |
             set -euo pipefail
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-            cd "${{ secrets.DEPLOY_PATH }}/servicetrack.backend"
+            cd "${{ secrets.DEPLOY_PATH }}/backend"
             export DOCKER_REGISTRY POSTGRES_USER POSTGRES_PASSWORD RABBITMQ_USER RABBITMQ_PASSWORD PGADMIN_EMAIL PGADMIN_PASSWORD
             docker compose pull servicetracker.api
             docker compose up -d --no-build 
@@ -150,7 +150,7 @@ jobs:
           script: |
             set -euo pipefail
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-            cd "${{ secrets.DEPLOY_PATH }}/servicetrack.frontend"
+            cd "${{ secrets.DEPLOY_PATH }}/frontend"
             export DOCKER_REGISTRY
             docker compose pull servicetracker.web
             docker compose up -d --no-build 
