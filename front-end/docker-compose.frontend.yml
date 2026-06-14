@@ -8,11 +8,11 @@ services:
     build:
       context: ./Web
       dockerfile: Dockerfile
+      args:
+        # VITE_API_URL is baked into the JS bundle at build time.
+        # Set to the full API base URL, e.g. https://api.example.com/api
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080/api}
     container_name: service-tracker-web
     restart: unless-stopped
     ports:
-      - "3000:80"    
-    environment:
-      # nginx substitutes ${API_URL} at startup — set to backend base URL,
-      # e.g. http://servicetracker.api:8080 or https://api.example.com
-      - API_URL=${API_URL:-http://localhost:8080}
+      - "3000:80"

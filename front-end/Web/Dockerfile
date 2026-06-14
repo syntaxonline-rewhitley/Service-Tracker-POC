@@ -9,6 +9,10 @@ RUN npm ci
 
 # Copy source and build
 COPY . .
+# VITE_API_URL is baked into the JS bundle at build time by Vite.
+# Pass it as a build arg: docker build --build-arg VITE_API_URL=https://api.example.com/api
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
 RUN npm run build
 
 # ── Stage 2: Serve ────────────────────────────────────────────────────────────
