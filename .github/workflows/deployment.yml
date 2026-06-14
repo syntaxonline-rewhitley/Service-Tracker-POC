@@ -120,7 +120,7 @@ jobs:
             cd "${{ secrets.DEPLOY_PATH }}/servicetrack.backend"
             export DOCKER_REGISTRY POSTGRES_USER POSTGRES_PASSWORD RABBITMQ_USER RABBITMQ_PASSWORD PGADMIN_EMAIL PGADMIN_PASSWORD
             docker compose pull servicetracker.api
-            docker compose up -d --no-build servicetracker.api postgres pgadmin rabbitmq
+            docker compose up -d --no-build 
             docker system prune -f
         env:
           DOCKER_REGISTRY: ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.owner }}/
@@ -153,7 +153,7 @@ jobs:
             cd "${{ secrets.DEPLOY_PATH }}/servicetrack.frontend"
             export DOCKER_REGISTRY
             docker compose pull servicetracker.web
-            docker compose up -d --no-build servicetracker.web
+            docker compose up -d --no-build 
             docker system prune -f
         env:
           DOCKER_REGISTRY: ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.owner }}/
