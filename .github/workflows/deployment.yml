@@ -154,7 +154,7 @@ jobs:
             docker compose up -d --no-build servicetracker.web
             docker system prune -f
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_API_URL: ${{ env.VITE_API_URL }}
           DOCKER_REGISTRY: ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.owner }}/
           GHCR_USER: ${{ secrets.GHCR_USER }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
