@@ -41,13 +41,13 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore
-        run: dotnet restore "Service Tracker POC.sln"
+        run: dotnet restore "src/Service Tracker POC.sln"
 
       - name: Build
-        run: dotnet build "Service Tracker POC.sln" --no-restore -c Release
+        run: dotnet build "src/Service Tracker POC.sln" --no-restore -c Release
 
       - name: Test
-        run: dotnet test "Service Tracker POC.sln" --no-build -c Release --verbosity normal
+        run: dotnet test "src/Service Tracker POC.sln" --no-build -c Release --verbosity normal
 
   # ── 2. Build images and push to ghcr.io ───────────────────────────────────
   build-and-push:
@@ -83,8 +83,8 @@ jobs:
       - name: Build and push API
         uses: docker/build-push-action@v6
         with:
-          context: back-end
-          file: back-end/src/ServiceTracker.Api/Dockerfile
+          context: src/ServiceTracker.Api
+          file: src/ServiceTracker.Api/Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ steps.owner.outputs.value }}/servicetrackerapi:${{ steps.tag.outputs.value }}
           cache-from: type=gha
@@ -93,8 +93,8 @@ jobs:
       - name: Build and push Web UI
         uses: docker/build-push-action@v6
         with:
-          context: front-end/Web
-          file: front-end/Web/Dockerfile
+          context: src/ServiceTracker.Web
+          file: src/ServiceTracker.Web/Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ steps.owner.outputs.value }}/servicetrackerweb:${{ steps.tag.outputs.value }}
           build-args: VITE_API_URL=${{ secrets.VITE_API_URL }}
@@ -108,7 +108,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
