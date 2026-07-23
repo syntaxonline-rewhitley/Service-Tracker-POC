@@ -1,5 +1,5 @@
 # ── Stage 1: Build ────────────────────────────────────────────────────────────
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ ENV VITE_API_URL=${VITE_API_URL}
 RUN npm run build
 
 # ── Stage 2: Serve ────────────────────────────────────────────────────────────
-FROM nginx:stable-alpine AS final
+FROM nginx:1.27-alpine AS final
 
 # Copy nginx config as a template — nginx entrypoint runs envsubst on it at startup
 COPY nginx.conf /etc/nginx/templates/default.conf.template
