@@ -101,39 +101,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ── 3. Deploy back-end to VPS via SSH ─────────────────────────────────────
-  deploy-api:
-    name: Deploy API to VPS
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: DOCKER_REGISTRY,POSTGRES_USER,POSTGRES_PASSWORD,RABBITMQ_USER,RABBITMQ_PASSWORD,PGADMIN_EMAIL,PGADMIN_PASSWORD,GHCR_USER,GHCR_TOKEN
-          script: |
-            set -euo pipefail
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-            cd "${{ secrets.DEPLOY_PATH }}/backend"
-            export DOCKER_REGISTRY POSTGRES_USER POSTGRES_PASSWORD RABBITMQ_USER RABBITMQ_PASSWORD PGADMIN_EMAIL PGADMIN_PASSWORD
-            docker compose pull servicetracker.api
-            docker compose up -d --no-build 
-            docker system prune -f
-        env:
-          DOCKER_REGISTRY: ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.owner }}/
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          RABBITMQ_USER: ${{ secrets.RABBITMQ_USER }}
-          RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
-          PGADMIN_EMAIL: ${{ secrets.PGADMIN_EMAIL }}
-          PGADMIN_PASSWORD: ${{ secrets.PGADMIN_PASSWORD }}
-          GHCR_USER: ${{ secrets.GHCR_USER }}
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-
-
 
   # ── 3. Deploy to VPS via SSH ──────────────────────────────────
   deploy-to-ssh:
