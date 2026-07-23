@@ -11,7 +11,7 @@ EXPOSE 8080
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["ServiceTracker.Api/ServiceTracker.Api.csproj", "ServiceTracker.Api/"]
+COPY ["src/ServiceTracker.Api/ServiceTracker.Api.csproj", "ServiceTracker.Api/"]
 RUN dotnet restore "ServiceTracker.Api/ServiceTracker.Api.csproj"
 COPY . .
 WORKDIR "/src/ServiceTracker.Api"
