@@ -1,0 +1,4 @@
+name: servicetrack
+include:
+  - docker-compose.frontend.yml
+  - docker-compose.backend.yml

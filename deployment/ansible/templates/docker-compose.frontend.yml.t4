@@ -1,0 +1,12 @@
+services:
+
+  # ── React JS Front End Web ─────────────────────────────────────────────────────────────
+  servicetracker.web:
+    image: ${DOCKER_REGISTRY-}servicetrackerweb:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Web/Dockerfile
+    container_name: service-tracker-web
+    restart: unless-stopped
+    ports:
+      - "8082:80"

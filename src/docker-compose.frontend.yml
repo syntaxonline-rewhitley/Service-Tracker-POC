@@ -6,7 +6,7 @@ services:
   servicetracker.web:
     image: ${DOCKER_REGISTRY-}servicetrackerwebui
     build:
-      context: ./Web
+      context: ./ServiceTracker.Web
       dockerfile: Dockerfile
       args:
         # VITE_API_URL is baked into the JS bundle at build time.

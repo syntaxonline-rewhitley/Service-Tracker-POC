@@ -1,0 +1,112 @@
+---
+- name: Deploy Standalone Docker Compose Stack
+  hosts: localhost
+  become: true  # Required for system package management and root directories
+
+  vars:
+    app_project_dir: /opt/stacks/servicetrack
+
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/frontend.yml
+    - group_vars/backend.yml
+    - group_vars/vault.yml
+
+  tasks:
+    - name: Ensure Python Docker library dependency is present
+      ansible.builtin.pip:
+        name: docker
+        state: present
+
+
+    - name: Force socket permissions inside Alpine container
+      ansible.builtin.file:
+        path: /var/run/docker.sock
+        mode: '0666'
+
+    - name: Create isolated application directory
+      ansible.builtin.file:
+        path: "{{ app_project_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Deploy environment secrets configuration file
+      ansible.builtin.template:
+        src: templates/app.env.t4
+        dest: "{{ app_project_dir }}/.env"
+        owner: root
+        group: root
+        mode: '0600'  # Restrictive permissions prevent read access from non-ro>
+      no_log: true    # Prevents sensitive database passwords from leaking in l>
+
+    - name: Deploy environment secrets configuration file
+      ansible.builtin.template:
+        src: templates/app.env.frontend.t4
+        dest: "{{ app_project_dir }}/.env.frontend"
+        owner: root
+        group: root
+        mode: '0600'  # Restrictive permissions prevent read access from non-root users
+      no_log: true    # Prevents sensitive database passwords from leaking in logs
+
+
+    - name: Deploy environment secrets configuration file
+      ansible.builtin.template:
+        src: templates/app.env.backend.t4
+        dest: "{{ app_project_dir }}/.env.backend"
+        owner: root
+        group: root
+        mode: '0600'  # Restrictive permissions prevent read access from non-root users
+      no_log: true    # Prevents sensitive database passwords from leaking in logs
+
+    - name: Deploy dynamic Docker Compose specification file
+      ansible.builtin.template:
+        src: templates/docker-compose.frontend.yml.t4
+        dest: "{{ app_project_dir }}/docker-compose.frontend.yml"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Deploy dynamic Docker Compose specification file
+      ansible.builtin.template:
+        src: templates/docker-compose.backend.yml.t4
+        dest: "{{ app_project_dir }}/docker-compose.backend.yml"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Deploy dynamic Docker Compose specification file
+      ansible.builtin.template:
+        src: templates/docker-compose.yml.t4
+        dest: "{{ app_project_dir }}/docker-compose.yml"
+        owner: root
+        group: root
+        mode: '0644'
+
+
+    - name: Log into Docker Registry natively
+      community.docker.docker_login:
+        registry_url: "ghcr.io" # Or your private registry URL
+        username: "{{ ghcr_registry_username }}"
+        password: "{{ ghcr_registry_password }}"
+      register: registry_login_result
+      no_log: true # Prevents passwords from showing in logs
+
+
+    - name: Deploy with specific settings
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_project_dir }}"
+        files:
+          - docker-compose.yml
+        env_files:
+          - .env
+          - .env.frontend
+          - .env.backend
+        pull: always
+        build: never
+        remove_orphans: true
+        recreate: always
+        state: present
+      register: compose_result
+

@@ -1,0 +1,3 @@
+ghcr_registry_username: "{{ vault_ghcr_registry_username }}"
+ghcr_registry_password: "{{ vault_ghcr_registry_password }}"
+DOCKER_REGISTRY: ghcr.io/syntaxonline-rewhitley/
