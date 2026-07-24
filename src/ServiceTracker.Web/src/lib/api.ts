@@ -20,7 +20,9 @@ import type {
 // VITE_API_URL is baked into the bundle at Docker build time via --build-arg.
 // Set it to the full API base URL, e.g. https://api.example.com/api
 // In local dev (no build arg) it falls back to '/api' proxied by vite.config.ts.
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? '/api' })
+const baseUrl = window._env_?.SERVICETRACK_API_BASE_URL ?? '/api'
+
+const api = axios.create({ baseURL: baseUrl })
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
