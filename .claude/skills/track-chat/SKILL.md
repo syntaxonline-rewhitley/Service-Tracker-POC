@@ -5,6 +5,11 @@ description: Create a GitHub issue that tracks the current chat session's work
 Create a GitHub issue in this repository (`syntaxonline-rewhitley/Service-Tracker-POC`) to track the
 current chat session, using the `gh` CLI. Extra instructions from the user, if any: $ARGUMENTS.
 
+This skill assumes tracking has already been judged worthwhile — at session start that judgment
+call belongs to the `intern` agent (`.claude/agents/intern.md`), not this
+skill. If you're invoking this directly without going through that agent, make sure a tracked
+issue doesn't already exist for this work before proceeding.
+
 1. Review the conversation so far and summarize:
    - What the user asked for / the goal of this chat.
    - What has been done so far (files touched, decisions made) — check `git status` / `git diff`
