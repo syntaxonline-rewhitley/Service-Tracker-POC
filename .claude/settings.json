@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -n '{hookSpecificOutput:{hookEventName:\"UserPromptSubmit\",additionalContext:\"This is the first message of a new Claude Code session in this repo. Per project convention (see .claude/skills/track-chat/SKILL.md), treat this as the start of a new tracked issue: run the /track-chat flow using this opening request as the basis for the issue, show the drafted title/body to the user for confirmation before creating anything, then create the feature branch once confirmed.\"}}'",
+            "once": true
+          }
+        ]
+      }
+    ]
+  }
+}
