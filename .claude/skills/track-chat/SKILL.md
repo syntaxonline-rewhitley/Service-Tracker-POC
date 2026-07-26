@@ -28,4 +28,14 @@ current chat session, using the `gh` CLI. Extra instructions from the user, if a
    ```
    Add `--label` flags only for labels that already exist in the repo (check with
    `gh label list --repo syntaxonline-rewhitley/Service-Tracker-POC` first) — don't guess at labels.
-5. Report back the issue URL returned by `gh issue create`.
+   Note the issue number from the URL `gh issue create` returns.
+5. Create a feature branch to track work against the issue:
+   - Check `git status` first; if there are uncommitted changes, stop and ask the user how to
+     proceed rather than switching branches out from under them.
+   - Slugify the issue title (lowercase, spaces/punctuation → `-`, trimmed) and branch from the
+     current branch:
+     ```bash
+     git checkout -b issue-<number>-<slug>
+     ```
+   - Do not push the branch automatically — leave that to the user unless they ask for it.
+6. Report back the issue URL and the branch name created.
