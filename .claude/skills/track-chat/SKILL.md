@@ -38,21 +38,21 @@ current chat session, using the `gh` CLI. Extra instructions from the user, if a
      ```bash
      git checkout -b issue-<number>-<slug>
      ```
-   - Do not push the branch automatically — leave that to the user unless they ask for it.
-6. Report back the issue URL and the branch name created.
-7. When the user later indicates the work on this branch is complete, open a **draft** pull
-   request back into the source branch noted in step 5:
-   - Confirm there are no uncommitted changes (`git status`); if there are, ask the user whether
-     to commit them first rather than opening the PR against a dirty tree.
-   - Push the branch if it isn't already on the remote: `git push -u origin <branch>`.
+   - Push the new branch to remote and set upstream: `git push -u origin issue-<number>-<slug>`.
+6. Immediately open a **draft** pull request from this branch back into the source branch noted
+   in step 5 — do not wait for the user to say the work is complete:
    - Create the draft PR, referencing the tracked issue so it auto-closes on merge:
      ```bash
      gh pr create --repo syntaxonline-rewhitley/Service-Tracker-POC --draft \
-       --base <source-branch> --head <branch> \
+       --base <source-branch> --head issue-<number>-<slug> \
        --title "<title>" --body "Closes #<number>
 
-     <summary of the work done>"
+     <summary of the work done so far, or a note that work is just starting>"
      ```
    - Show the drafted PR title/body to the user for confirmation before running `gh pr create`,
      same as with the issue — this is also a visible action on a shared system.
    - Report back the PR URL returned by `gh pr create`.
+7. Report back the issue URL, branch name, and PR URL created.
+8. As work continues on this branch, keep the draft PR's description reasonably in sync with
+   progress if asked, but there is no separate "PR creation" step later — it already exists from
+   step 6. Marking the PR ready-for-review is left to the user.
