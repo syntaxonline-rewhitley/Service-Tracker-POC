@@ -1,7 +1,6 @@
 ---
 name: track-chat
 description: Create a GitHub issue that tracks the current chat session's work
-disable-model-invocation: true
 ---
 Create a GitHub issue in this repository (`syntaxonline-rewhitley/Service-Tracker-POC`) to track the
 current chat session, using the `gh` CLI. Extra instructions from the user, if any: $ARGUMENTS.
