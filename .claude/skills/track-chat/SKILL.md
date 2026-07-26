@@ -1,9 +1,10 @@
 ---
 name: track-chat
-description: Create a GitHub issue that tracks the current chat session's work
+description: Create a GitHub issue/branch/PR for the current chat session's work, then implement the work itself
 ---
 Create a GitHub issue in this repository (`syntaxonline-rewhitley/Service-Tracker-POC`) to track the
-current chat session, using the `gh` CLI. Extra instructions from the user, if any: $ARGUMENTS.
+current chat session, using the `gh` CLI, then actually do the work needed to resolve it on a
+dedicated branch. Extra instructions from the user, if any: $ARGUMENTS.
 
 This skill assumes tracking has already been judged worthwhile — at session start that judgment
 call belongs to the `intern` agent (`.claude/agents/intern.md`), not this
@@ -59,7 +60,30 @@ issue doesn't already exist for this work before proceeding.
    - Show the drafted PR title/body to the user for confirmation before running `gh pr create`,
      same as with the issue — this is also a visible action on a shared system.
    - Report back the PR URL returned by `gh pr create`.
-7. Report back the issue URL, branch name, and PR URL created.
-8. As work continues on this branch, keep the draft PR's description reasonably in sync with
-   progress if asked, but there is no separate "PR creation" step later — it already exists from
-   step 6. Marking the PR ready-for-review is left to the user.
+7. Do the work to resolve the issue, on this branch, before finishing:
+   - Treat the issue body as the task spec. Read whatever existing code/config is relevant before
+     changing it, and implement the change(s) needed to address the user's original request —
+     don't stop at just filing the issue and opening an empty PR.
+   - Follow this repo's normal engineering conventions while doing so: `CLAUDE.md` for
+     build/test commands (`dotnet build`/`dotnet test` for backend changes, `npm run build` for
+     frontend changes) and architecture notes, plus `.claude/rules/code-style.md` and
+     `.claude/rules/security.md`. Run the relevant build/test command before considering the work
+     done.
+   - Commit as you would for any other task (see the main commit guidelines — only commit when
+     it's the natural conclusion of a unit of work, not one commit per file) and push to
+     `feature/issue-<number>-<slug>` so the draft PR reflects real progress.
+   - If the request turns out to be ambiguous, larger than expected, or you hit a decision only
+     the user can make, stop and ask — the same judgment calls that apply to any other
+     implementation task apply here too. Filing the issue/PR doesn't authorize guessing on scope.
+   - If the conversation that triggered this skill was purely a question or exploration with no
+     concrete change to make (this shouldn't normally reach this skill — see the note about the
+     `intern` agent above — but can happen on a direct invocation), say so plainly instead of
+     inventing busywork, and leave the PR as an empty draft for the user to close or fill in.
+8. Once the change is in place (or you've paused for input per step 7), update the draft PR
+   description via `gh pr edit <number> --body "<updated body>"` so its `## Work done` /
+   `## Remaining` sections reflect what actually happened, then report back the issue URL, branch
+   name, PR URL, and a short summary of what was implemented.
+9. Do not mark the PR ready for review yourself — that stays the user's call. If asked to keep
+   working on this same tracked issue later in the session, keep committing to the same branch
+   and keep the PR description in sync; there is no separate "PR creation" step to repeat, since
+   it already exists from step 6.
