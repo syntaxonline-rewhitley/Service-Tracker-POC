@@ -34,17 +34,19 @@ current chat session, using the `gh` CLI. Extra instructions from the user, if a
    - Note the current branch name before switching — this is the **source branch** the work will
      eventually merge back into.
    - Slugify the issue title (lowercase, spaces/punctuation → `-`, trimmed) and branch from the
-     current branch:
+     current branch, following the `feature/`-prefixed naming convention in
+     `.claude/rules/git.md`:
      ```bash
-     git checkout -b issue-<number>-<slug>
+     git checkout -b feature/issue-<number>-<slug>
      ```
-   - Push the new branch to remote and set upstream: `git push -u origin issue-<number>-<slug>`.
+   - Push the new branch to remote and set upstream:
+     `git push -u origin feature/issue-<number>-<slug>`.
 6. Immediately open a **draft** pull request from this branch back into the source branch noted
    in step 5 — do not wait for the user to say the work is complete:
    - Create the draft PR, referencing the tracked issue so it auto-closes on merge:
      ```bash
      gh pr create --repo syntaxonline-rewhitley/Service-Tracker-POC --draft \
-       --base <source-branch> --head issue-<number>-<slug> \
+       --base <source-branch> --head feature/issue-<number>-<slug> \
        --title "<title>" --body "Closes #<number>
 
      <summary of the work done so far, or a note that work is just starting>"
