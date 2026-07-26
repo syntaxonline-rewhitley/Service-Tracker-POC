@@ -1,15 +1,4 @@
 {
   "hooks": {
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -n '{hookSpecificOutput:{hookEventName:\"UserPromptSubmit\",additionalContext:\"This is the first message of a new Claude Code session in this repo. Per project convention, do not run /track-chat directly. Instead, launch the intern agent (see .claude/agents/intern.md) with this opening request as context, and let it decide whether the work warrants a tracked issue/branch/PR before anything is created.\"}}'",
-            "once": true
-          }
-        ]
-      }
-    ]
   }
 }
