@@ -32,6 +32,8 @@ current chat session, using the `gh` CLI. Extra instructions from the user, if a
 5. Create a feature branch to track work against the issue:
    - Check `git status` first; if there are uncommitted changes, stop and ask the user how to
      proceed rather than switching branches out from under them.
+   - Note the current branch name before switching — this is the **source branch** the work will
+     eventually merge back into.
    - Slugify the issue title (lowercase, spaces/punctuation → `-`, trimmed) and branch from the
      current branch:
      ```bash
@@ -39,3 +41,19 @@ current chat session, using the `gh` CLI. Extra instructions from the user, if a
      ```
    - Do not push the branch automatically — leave that to the user unless they ask for it.
 6. Report back the issue URL and the branch name created.
+7. When the user later indicates the work on this branch is complete, open a **draft** pull
+   request back into the source branch noted in step 5:
+   - Confirm there are no uncommitted changes (`git status`); if there are, ask the user whether
+     to commit them first rather than opening the PR against a dirty tree.
+   - Push the branch if it isn't already on the remote: `git push -u origin <branch>`.
+   - Create the draft PR, referencing the tracked issue so it auto-closes on merge:
+     ```bash
+     gh pr create --repo syntaxonline-rewhitley/Service-Tracker-POC --draft \
+       --base <source-branch> --head <branch> \
+       --title "<title>" --body "Closes #<number>
+
+     <summary of the work done>"
+     ```
+   - Show the drafted PR title/body to the user for confirmation before running `gh pr create`,
+     same as with the issue — this is also a visible action on a shared system.
+   - Report back the PR URL returned by `gh pr create`.
