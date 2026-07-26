@@ -365,5 +365,6 @@ FodyWeavers.xsd
 # Local/environment-specific app settings (may contain secrets)
 appsettings.Development.json
 appsettings.Local.json
+settings.local.json
 .env
 .env.*
