@@ -370,3 +370,6 @@ appsettings.Local.json
 .env.*
 
 config.js
+CLAUDE.local.md
+
+.claude/settings.local.json
