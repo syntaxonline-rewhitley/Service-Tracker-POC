@@ -370,3 +370,5 @@ appsettings.Local.json
 .env.*
 
 config.js
+settings.local.json
+
