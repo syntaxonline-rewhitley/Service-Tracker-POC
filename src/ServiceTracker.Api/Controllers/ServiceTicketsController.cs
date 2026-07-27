@@ -66,7 +66,9 @@ public class ServiceTicketsController(
             CompanyId = request.CompanyId,
             ContactId = request.ContactId,
             TechnicianId = request.TechnicianId,
-            ScheduledDate = DateTime.SpecifyKind(request.ScheduledDate.GetValueOrDefault(), DateTimeKind.Utc)
+            ScheduledDate = request.ScheduledDate.HasValue
+                ? DateTime.SpecifyKind(request.ScheduledDate.Value, DateTimeKind.Utc)
+                : null
         };
 
         var created = await repository.CreateAsync(ticket, ct);

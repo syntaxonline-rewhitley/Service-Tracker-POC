@@ -156,6 +156,51 @@ public class ServiceTicketsControllerTests
         captured!.Status.Should().Be(ServiceTicketStatus.Open);
     }
 
+    [Fact]
+    public async Task Create_LeavesScheduledDateNull_WhenNotProvided()
+    {
+        var companyId = Guid.NewGuid();
+        ServiceTicket? captured = null;
+        _repo.Setup(r => r.CreateAsync(It.IsAny<ServiceTicket>(), It.IsAny<CancellationToken>()))
+            .Callback<ServiceTicket, CancellationToken>((t, _) => captured = t)
+            .ReturnsAsync((ServiceTicket t, CancellationToken _) =>
+            {
+                t.Company = new Company { Id = companyId, Name = "Acme" };
+                return t;
+            });
+
+        var request = new CreateServiceTicketRequest("Title", null, companyId, null, null);
+
+        await _sut.Create(request, CancellationToken.None);
+
+        captured.Should().NotBeNull();
+        captured!.ScheduledDate.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Create_SetsScheduledDateWithUtcKind_WhenProvided()
+    {
+        var companyId = Guid.NewGuid();
+        var scheduledDate = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Unspecified);
+        ServiceTicket? captured = null;
+        _repo.Setup(r => r.CreateAsync(It.IsAny<ServiceTicket>(), It.IsAny<CancellationToken>()))
+            .Callback<ServiceTicket, CancellationToken>((t, _) => captured = t)
+            .ReturnsAsync((ServiceTicket t, CancellationToken _) =>
+            {
+                t.Company = new Company { Id = companyId, Name = "Acme" };
+                return t;
+            });
+
+        var request = new CreateServiceTicketRequest("Title", null, companyId, null, null, ScheduledDate: scheduledDate);
+
+        await _sut.Create(request, CancellationToken.None);
+
+        captured.Should().NotBeNull();
+        captured!.ScheduledDate.Should().NotBeNull();
+        captured.ScheduledDate!.Value.Kind.Should().Be(DateTimeKind.Utc);
+        captured.ScheduledDate.Value.Should().Be(new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc));
+    }
+
     // --- Update ---
 
     [Fact]
